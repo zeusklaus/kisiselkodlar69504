@@ -1,0 +1,200 @@
+import time
+import requests
+import random
+import string
+import os
+from pathlib import Path
+import pickle
+import json
+import hashlib
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException
+
+#banagel
+# Numara satın alma işlemi için API'ye istek yapma
+def get_phone_number():
+    url = "https://5sim.net/v1/user/buy/activation/turkey/virtual4/getir"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36",
+        "Pragma": "no-cache",
+        "Accept": "application/json",
+        "Authorization": "Bearer eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTkxMDU4MjAsImlhdCI6MTY4NzU2OTgyMCwicmF5IjoiMWYzNDNhMTE1M2RiODg5ZjhjYmFmM2VkNDEzMGQ1ZWQiLCJzdWIiOjE3MDM2ODh9.JL7LFVobwkMojw3p2e8bYbCOQZ4c8M0MWBsZmHjldGE-XODBPquMVxRHPrOnKCEcH4kqiOm1GUNoUP45VO31fw6SvKxj6RRhAPEEIRdS0eRp0T7JyHS6gWVR3u6njL0KiRhBwRxdk0-7-odKn04eVNmPxi4djfsv0avBRvZel7Ou7j_ikh32_8MM4490Pr7qZ-kOxj9GPFHF9h5776XIOV-jqoGk2OBUOS6S8yBDfDsBoTCnF29iI1IyVvpDdhTHklCUQkyWJOrPmJy-w8BrlO8yAVgkSEI8ZQ0k7ltOxyp78yJ1seeVw6ej9wMxdAiqPJFsUXh3uVzCTsSFf_jgdQ"
+    }
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        try:
+            data = response.json()
+        except ValueError:
+            print("no numbers")
+            return None, None
+
+        if "phone" in data and data["phone"] and "status" in data and data["status"] == "RECEIVED":
+            phone_number = data["phone"].replace("+90", "")  # +90 kısmını numara kısmından çıkar
+            activation_id = data["id"]
+            print("Numara satın alma işlemi başarılı.")
+            print("Telefon Numarası:", phone_number)
+            print("Aktivasyon ID:", activation_id)
+            return phone_number, activation_id
+
+    error_message = response.text.strip()
+    print("Hata:", error_message)
+    return None, None
+
+# Numara satın alma işlemi
+phone_number, activation_id = get_phone_number()
+while phone_number is None:
+    time.sleep(3)
+    phone_number, activation_id = get_phone_number()
+    
+# Random isim oluşturma fonksiyonu
+def generate_random_name():
+    names = [
+        "Ahmet Yılmaz", "Ali Demir", "Ayşe Kaya", "Canan Öztürk", "Cem Şahin", "Deniz Aksoy", "Derya Yıldız", "Ebru Arslan", "Elif Şen", "Emir Korkmaz", "Emre Tuncer", "Esra Çelik",
+        "Feyza Toprak", "Gökhan Demirci", "Gül Yılmaz", "Halil Yıldırım", "Hande Güler", "Hasan Arıkan", "Hüseyin Kaya", "İbrahim Aydın", "İrem Demir", "Kadir Öztürk", "Kemal Doğan",
+        "Mehmet Yıldız", "Melis Şahin", "Merve Ateş", "Murat Yılmaz", "Mustafa Arslan", "Nur Kara", "Ömer Şen", "Özge Yılmaz", "Selin Arıkan", "Sema Aydın", "Serdar Kaya",
+        "Şeyma Demir", "Tuba Yıldız", "Turan Aksoy", "Uğur Aydın", "Yağmur Korkmaz", "Yasemin Arslan", "Yasin Yılmaz", "Yusuf Kara", "Zeynep Demir"
+    ]
+    return random.choice(names)
+
+# Random e-posta oluşturma fonksiyonu
+def generate_random_email():
+    letters = string.ascii_lowercase
+    username = ''.join(random.choice(letters) for _ in range(8))
+    domain = random.choice(["gmail.com", "hotmail.com", "yahoo.com"])
+    email = f"{username}@{domain}"
+    return email
+
+# undetected-chromedriver ile Chrome'u başlat
+options = Options()
+options.add_argument("--start-maximized")
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
+options.add_argument("--disable-blink-features=AutomationControlled")
+driver = webdriver.Chrome(options=options)
+
+# Web sitesini açma
+driver.get("https://getir.com/")
+
+kayit_ol_butonu = driver.find_element(By.CSS_SELECTOR, "#__next > div.sc-212542e0-2.ckZpLq > div > nav > div > div.sc-132171b3-3.koKtLQ > div:nth-child(3) > button")
+
+kayit_ol_butonu.click()
+time.sleep(3)
+
+# Telefon numarasını girme
+telefon_input = driver.find_element(By.CSS_SELECTOR, "body > div.style__Wrapper-sc-__sc-vk2nyz-6.znHNm.sc-70aa1ff4-0.dHIbWZ.sc-7dfe7278-9.sc-967aaa25-3.bGjCsJ.dlJEcr > div.style__ModalWrapper-sc-__sc-vk2nyz-9.cNdhSC > div > div.style__ModalContent-sc-__sc-vk2nyz-10.hRSRqW > div.style__Content-sc-__sc-vk2nyz-2.gEvqgW > form > div.sc-7dfe7278-3.gtOZIr > div.sc-7dfe7278-11.dWMkhI > div.style__Wrapper-sc-__sc-1wqqe47-17.jSCWHZ > div > div > input")
+telefon_input.send_keys(phone_number)
+
+# Ad ve Soyadı girme
+adsoyad_input = driver.find_element(By.CSS_SELECTOR, "body > div.style__Wrapper-sc-__sc-vk2nyz-6.znHNm.sc-70aa1ff4-0.dHIbWZ.sc-7dfe7278-9.sc-967aaa25-3.bGjCsJ.dlJEcr > div.style__ModalWrapper-sc-__sc-vk2nyz-9.cNdhSC > div > div.style__ModalContent-sc-__sc-vk2nyz-10.hRSRqW > div.style__Content-sc-__sc-vk2nyz-2.gEvqgW > form > div.sc-7dfe7278-3.gtOZIr > div:nth-child(2) > div > div > input")
+adsoyad_input.send_keys(generate_random_name())
+
+# E-posta adresini girme
+eposta_input = driver.find_element(By.CSS_SELECTOR, "body > div.style__Wrapper-sc-__sc-vk2nyz-6.znHNm.sc-70aa1ff4-0.dHIbWZ.sc-7dfe7278-9.sc-967aaa25-3.bGjCsJ.dlJEcr > div.style__ModalWrapper-sc-__sc-vk2nyz-9.cNdhSC > div > div.style__ModalContent-sc-__sc-vk2nyz-10.hRSRqW > div.style__Content-sc-__sc-vk2nyz-2.gEvqgW > form > div.sc-7dfe7278-3.gtOZIr > div:nth-child(3) > div > div > input")
+eposta_input.send_keys(generate_random_email())
+
+# Kullanım şartlarını kabul etme
+kabul_checkbox = driver.find_element(By.CSS_SELECTOR, "body > div.style__Wrapper-sc-__sc-vk2nyz-6.znHNm.sc-70aa1ff4-0.dHIbWZ.sc-7dfe7278-9.sc-967aaa25-3.bGjCsJ.dlJEcr > div.style__ModalWrapper-sc-__sc-vk2nyz-9.cNdhSC > div > div.style__ModalContent-sc-__sc-vk2nyz-10.hRSRqW > div.style__Content-sc-__sc-vk2nyz-2.gEvqgW > form > div.sc-967aaa25-1.VUQpZ > div > label > div > span.style__CheckboxWrapper-sc-__sc-6qf2sf-4.ebGPvD > input")
+kabul_checkbox.click()
+
+
+# Kayıt ol butonuna tıklama
+kayitol_butonu = driver.find_element(By.CSS_SELECTOR, "body > div.style__Wrapper-sc-__sc-vk2nyz-6.znHNm.sc-70aa1ff4-0.dHIbWZ.sc-7dfe7278-9.sc-967aaa25-3.bGjCsJ.dlJEcr > div.style__ModalWrapper-sc-__sc-vk2nyz-9.cNdhSC > div > div.style__ModalContent-sc-__sc-vk2nyz-10.hRSRqW > div.style__Content-sc-__sc-vk2nyz-2.gEvqgW > form > div.sc-7dfe7278-2.EJEMa > div > button")
+kayitol_butonu.click()
+
+ # Hata mesajını kontrol etme
+time.sleep(3)
+try:
+    error_message_element = driver.find_element(By.CSS_SELECTOR, "body > div.style__Wrapper-sc-__sc-vk2nyz-6.znHNm.sc-70aa1ff4-0.dHIbWZ.sc-7dfe7278-9.sc-967aaa25-3.bGjCsJ.dlJEcr > div.style__ModalWrapper-sc-__sc-vk2nyz-9.cNdhSC > div > div.style__ModalContent-sc-__sc-vk2nyz-10.hRSRqW > div.style__Content-sc-__sc-vk2nyz-2.gEvqgW > form > span")
+    error_message = error_message_element.text
+
+    if error_message == "Bu telefon numarası zaten kayıtlı.":
+        print("Bu telefon numarası zaten kayıtlı.")
+        # Numarayı iptal et
+        cancel_url = f"https://5sim.net/v1/user/ban/{activation_id}"
+        cancel_headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36",
+            "Pragma": "no-cache",
+            "Accept": "application/json",
+            "Authorization": "Bearer eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTkxMDU4MjAsImlhdCI6MTY4NzU2OTgyMCwicmF5IjoiMWYzNDNhMTE1M2RiODg5ZjhjYmFmM2VkNDEzMGQ1ZWQiLCJzdWIiOjE3MDM2ODh9.JL7LFVobwkMojw3p2e8bYbCOQZ4c8M0MWBsZmHjldGE-XODBPquMVxRHPrOnKCEcH4kqiOm1GUNoUP45VO31fw6SvKxj6RRhAPEEIRdS0eRp0T7JyHS6gWVR3u6njL0KiRhBwRxdk0-7-odKn04eVNmPxi4djfsv0avBRvZel7Ou7j_ikh32_8MM4490Pr7qZ-kOxj9GPFHF9h5776XIOV-jqoGk2OBUOS6S8yBDfDsBoTCnF29iI1IyVvpDdhTHklCUQkyWJOrPmJy-w8BrlO8yAVgkSEI8ZQ0k7ltOxyp78yJ1seeVw6ej9wMxdAiqPJFsUXh3uVzCTsSFf_jgdQ"
+        }
+        cancel_response = requests.get(cancel_url, headers=cancel_headers)
+
+        if cancel_response.status_code == 200:
+            print("Numara iptal edildi.")
+        driver.quit()
+        
+        
+    else:
+        # Hedeflenen element bulunamadı, kayıt işlemine devam et
+        print("Hedeflenen element bulunamadı.")
+except NoSuchElementException:
+    # Hedeflenen element bulunamadı, kayıt işlemine devam et
+    print("Hedeflenen element bulunamadı.")
+
+# 30saniye bekleme
+time.sleep(30)
+        
+# Aktivasyon kodunu alma
+def get_activation_code(activation_id):
+    url = f"https://5sim.net/v1/user/check/{activation_id}"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36",
+        "Pragma": "no-cache",
+        "Accept": "application/json",
+        "Authorization": "Bearer eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTkxMDU4MjAsImlhdCI6MTY4NzU2OTgyMCwicmF5IjoiMWYzNDNhMTE1M2RiODg5ZjhjYmFmM2VkNDEzMGQ1ZWQiLCJzdWIiOjE3MDM2ODh9.JL7LFVobwkMojw3p2e8bYbCOQZ4c8M0MWBsZmHjldGE-XODBPquMVxRHPrOnKCEcH4kqiOm1GUNoUP45VO31fw6SvKxj6RRhAPEEIRdS0eRp0T7JyHS6gWVR3u6njL0KiRhBwRxdk0-7-odKn04eVNmPxi4djfsv0avBRvZel7Ou7j_ikh32_8MM4490Pr7qZ-kOxj9GPFHF9h5776XIOV-jqoGk2OBUOS6S8yBDfDsBoTCnF29iI1IyVvpDdhTHklCUQkyWJOrPmJy-w8BrlO8yAVgkSEI8ZQ0k7ltOxyp78yJ1seeVw6ej9wMxdAiqPJFsUXh3uVzCTsSFf_jgdQ"
+    }
+    response = requests.get(url, headers=headers)
+
+    try:
+        data = response.json()
+    except ValueError:
+        print("Hata: Yanıt JSON formatında değil.")
+        return None
+
+    # "sms" anahtarı kontrol edilir
+    if "sms" in data and data["sms"]:
+        sms_details = data["sms"][0]  # İlk SMS mesajının detayları
+        if "text" in sms_details:
+            activation_code = sms_details["text"]
+            print("Aktivasyon kodu alındı.")
+            print("Aktivasyon Kodu:", activation_code)
+            return activation_code
+    else:
+        print("Aktivasyon kodu alınamadı.")
+        return None
+
+# Aktivasyon kodunu alma ve giriş yapma
+activation_code = get_activation_code(activation_id)
+if activation_code:
+    aktivasyon_input = driver.find_element(By.CSS_SELECTOR, "body > div.style__Wrapper-sc-__sc-vk2nyz-6.znHNm.sc-70aa1ff4-0.dHIbWZ.sc-7dfe7278-9.bGjCsJ > div.style__ModalWrapper-sc-__sc-vk2nyz-9.cNdhSC > div > div.style__ModalContent-sc-__sc-vk2nyz-10.hRSRqW > div.style__Content-sc-__sc-vk2nyz-2.gEvqgW > form > div.sc-7dfe7278-3.gtOZIr > div > div > div > input")
+    aktivasyon_input.send_keys(activation_code)
+
+# Devam et butonuna tıklama
+devamet_butonu = driver.find_element(By.CSS_SELECTOR, "body > div.style__Wrapper-sc-__sc-vk2nyz-6.znHNm.sc-70aa1ff4-0.dHIbWZ.sc-7dfe7278-9.bGjCsJ > div.style__ModalWrapper-sc-__sc-vk2nyz-9.cNdhSC > div > div.style__ModalContent-sc-__sc-vk2nyz-10.hRSRqW > div.style__Content-sc-__sc-vk2nyz-2.gEvqgW > form > div.sc-7dfe7278-2.EJEMa > div > button")
+devamet_butonu.click()
+
+cookies = driver.get_cookies()  # Çerezleri al
+
+# Dosya dizinini oluştur
+directory = Path(r"C:\Getir")
+
+directory.mkdir(parents=True, exist_ok=True)
+
+def convert_to_md5(value):
+    md5_hash = hashlib.md5(value.encode()).hexdigest()
+    return md5_hash
+
+md5_value = convert_to_md5(phone_number)
+print("Telefon numarası:", phone_number)
+print("MD5 değeri:", md5_value)
+
+# Çerezleri dosyaya kaydet
+filename = directory / f"{md5_value}"
+with open(filename, "w") as f:
+    json.dump(cookies, f)
+print("Çerezler başarıyla kaydedildi.")
+phone_number, activation_id = get_phone_number()
+# Tarayıcıyı kapatma
